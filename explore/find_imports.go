@@ -104,10 +104,36 @@ func FindImports(root string) (imports []Import, err error) {
 }
 
 func findKeyword(word string, bytes []byte) (indexes []int) {
+	var inStringLit bool
+	var stringDelimiter rune
+	word += " "
 	wordlen := len(word)
 
 	for index := 0; index+wordlen < len(bytes); index++ {
+		if inStringLit {
+			continue
+		}
+
 		wordend := index + wordlen
+		b := bytes[index]
+
+		if b == '"' && (stringDelimiter == '"' || stringDelimiter == 0) {
+			stringDelimiter = 0
+			inStringLit = !inStringLit
+
+			if inStringLit {
+				stringDelimiter = '"'
+			}
+		}
+
+		if b == '`' && (stringDelimiter == '`' || stringDelimiter == 0) {
+			stringDelimiter = 0
+			inStringLit = !inStringLit
+
+			if inStringLit {
+				stringDelimiter = '`'
+			}
+		}
 
 		if string(bytes[index:wordend]) == word {
 			indexes = append(indexes, index)
