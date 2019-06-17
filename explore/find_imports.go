@@ -8,6 +8,7 @@ import (
 )
 
 func FindImports(root string) (imports []Import, err error) {
+	const importKeyword = "import"
 	var paths []string
 	importMap := map[string]Import{}
 
@@ -38,14 +39,14 @@ func FindImports(root string) (imports []Import, err error) {
 			return nil, err
 		}
 
-		indexes := findKeyword("import", contents)
+		indexes := findKeyword(importKeyword, contents)
 
 	indexLoop:
 		for _, index := range indexes {
 			var block bool
 			var inImport bool
 			var iport []byte
-			index := index + 6
+			index := index + len(importKeyword)
 
 			for ; index < len(contents); index++ {
 				if contents[index] == '(' {
@@ -75,14 +76,9 @@ func FindImports(root string) (imports []Import, err error) {
 				continue indexLoop
 			}
 
-			for ; index < len(contents); index++ {
-				if contents[index] == '"' {
-					inImport = !inImport
-				}
-
-				if inImport && contents[index] != '"' {
-					iport = append(iport, contents[index])
-				}
+			index++
+			for ; contents[index] != '"'; index++ {
+				iport = append(iport, contents[index])
 			}
 
 			importSources = append(importSources, string(iport))
