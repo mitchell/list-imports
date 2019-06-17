@@ -110,10 +110,6 @@ func findKeyword(word string, bytes []byte) (indexes []int) {
 	wordlen := len(word)
 
 	for index := 0; index+wordlen < len(bytes); index++ {
-		if inStringLit {
-			continue
-		}
-
 		wordend := index + wordlen
 		b := bytes[index]
 
@@ -133,6 +129,10 @@ func findKeyword(word string, bytes []byte) (indexes []int) {
 			if inStringLit {
 				stringDelimiter = '`'
 			}
+		}
+
+		if inStringLit {
+			continue
 		}
 
 		if string(bytes[index:wordend]) == word {
