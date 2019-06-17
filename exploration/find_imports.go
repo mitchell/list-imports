@@ -1,4 +1,4 @@
-package explore
+package exploration
 
 import (
 	"io/ioutil"
@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-func FindImports(root string) (imports []Import, err error) {
-	const importKeyword = "import"
+func FindImports(root string, includeVendor bool) (imports []Import, err error) {
 	var paths []string
 	importMap := map[string]Import{}
 
@@ -17,7 +16,7 @@ func FindImports(root string) (imports []Import, err error) {
 			return err
 		}
 
-		if strings.HasSuffix(filepath.Dir(path), "vendor") {
+		if !includeVendor && strings.HasSuffix(filepath.Dir(path), "vendor") {
 			return filepath.SkipDir
 		}
 
