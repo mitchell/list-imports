@@ -31,59 +31,16 @@ func FindImports(root string, includeVendor bool) (imports []Import, err error) 
 	}
 
 	for _, path := range paths {
-		var importSources []string
-
 		contents, err := ioutil.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}
 
-		indexes := findKeyword(importKeyword, contents)
+		indexes := findKeyword("import", contents)
 
-	indexLoop:
-		for _, index := range indexes {
-			var block bool
-			var inImport bool
-			var iport []byte
-			index := index + len(importKeyword)
+		parsedImports := parseImports(indexes, contents)
 
-			for ; index < len(contents); index++ {
-				if contents[index] == '(' {
-					block = true
-					break
-				} else if contents[index] == '"' {
-					break
-				}
-			}
-
-			if block {
-				for ; contents[index] != ')'; index++ {
-					if contents[index] == '"' && contents[index-1] != '\\' {
-						inImport = !inImport
-
-						if !inImport {
-							importSources = append(importSources, string(iport))
-							iport = []byte{}
-						}
-					}
-
-					if inImport && contents[index] != '"' {
-						iport = append(iport, contents[index])
-					}
-				}
-
-				continue indexLoop
-			}
-
-			index++
-			for ; contents[index] != '"'; index++ {
-				iport = append(iport, contents[index])
-			}
-
-			importSources = append(importSources, string(iport))
-		}
-
-		for _, source := range importSources {
+		for _, source := range parsedImports {
 			i := importMap[source]
 			i.Source = source
 			i.UsedIn = append(i.UsedIn, path)
@@ -137,4 +94,54 @@ func findKeyword(word string, bytes []byte) (indexes []int) {
 	}
 
 	return indexes
+}
+
+func parseImports(indexes []int, contents []byte) (imports []string) {
+indexLoop:
+	for _, index := range indexes {
+		var block bool
+		var inImport bool
+		var iport []byte
+
+		for ; index < len(contents); index++ {
+			if contents[index] == '\n' {
+				continue indexLoop
+			}
+
+			if contents[index] == '(' {
+				block = true
+				break
+			} else if contents[index] == '"' {
+				break
+			}
+		}
+
+		if block {
+			for ; index < len(contents) && contents[index] != ')'; index++ {
+				if contents[index] == '"' && contents[index-1] != '\\' {
+					inImport = !inImport
+
+					if !inImport {
+						imports = append(imports, string(iport))
+						iport = []byte{}
+					}
+				}
+
+				if inImport && contents[index] != '"' {
+					iport = append(iport, contents[index])
+				}
+			}
+
+			continue indexLoop
+		}
+
+		index++
+		for ; index < len(contents) && contents[index] != '"'; index++ {
+			iport = append(iport, contents[index])
+		}
+
+		imports = append(imports, string(iport))
+	}
+
+	return imports
 }
